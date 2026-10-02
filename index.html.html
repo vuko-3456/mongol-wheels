@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Life in Mongol Empire</title>
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);--bg:#eef2f4;--ink:#16252e;--mut:#5b6b75;--card:#fff;--line:#c9d3d9;--acc:#1d5f8a;--ok:#2f8f3a;--bad:#b3261e}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#101a21;--ink:#e6eef2;--mut:#93a5b0;--card:#18252e;--line:#2b3d49;--acc:#6cb4e4;--ok:#6fcf7a;--bad:#ff8a80}}
+:root[data-theme="dark"]{--bg:#101a21;--ink:#e6eef2;--mut:#93a5b0;--card:#18252e;--line:#2b3d49;--acc:#6cb4e4;--ok:#6fcf7a;--bad:#ff8a80}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 Georgia,"Times New Roman",serif}
+main{max-width:760px;margin:0 auto;padding:16px}
+h1{font-size:26px;margin:4px 0 2px}
+.top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+button.ghost{background:transparent;color:var(--ink);border:2px solid var(--line);padding:6px 12px;font-size:14px;margin:4px 0 0;flex:none}
+@media (prefers-color-scheme:dark){button.ghost{color:var(--ink)}}
+.sub{color:var(--mut);margin:0 0 12px;font-size:14px}
+.lives{display:flex;gap:6px;align-items:center;margin-bottom:12px;font-size:15px}
+.heart{width:22px;height:22px;border-radius:50%;background:var(--bad)}
+.heart.off{background:transparent;border:2px solid var(--line)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px;text-align:center}
+h2{font-size:20px;margin:0 0 8px}
+.wrap{position:relative;width:100%;max-width:300px;margin:8px auto}
+.stage{display:flex;gap:14px;align-items:center;justify-content:center}
+.wcol{flex:1;min-width:0}
+.lcol{flex:0 0 190px;text-align:left}
+.lcol ol{margin:0;padding-left:18px;font-size:12px;max-height:150px;overflow-y:auto}
+.chbox{background:#fff;border:1px solid var(--line);border-radius:10px;padding:4px}
+.chbox svg{width:100%;height:auto;display:block}
+@media (max-width:480px){.lcol{flex-basis:130px}}
+canvas{width:100%;height:auto;display:block;transition:transform 4s cubic-bezier(.12,.7,.1,1)}
+.ptr{position:absolute;left:50%;top:-8px;width:0;height:0;margin-left:-11px;border:11px solid transparent;border-top:20px solid var(--ink);border-bottom:0}
+button{font:inherit;font-weight:bold;background:var(--acc);color:#fff;border:0;border-radius:8px;padding:10px 20px;cursor:pointer;margin:6px 4px}
+:root[data-theme="dark"] button,button{color:#fff}
+@media (prefers-color-scheme:dark){button{color:#0b1a24}}
+button:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
+button:disabled{opacity:.5;cursor:default}
+.res{min-height:48px;font-size:18px;margin:6px 0}
+.res.ok{color:var(--ok)}.res.bad{color:var(--bad)}
+.leg{display:flex;flex-wrap:wrap;gap:4px 12px;justify-content:center;font-size:13px;color:var(--mut);margin-top:6px}
+.leg i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:4px}
+ol{padding-left:20px;color:var(--mut);font-size:14px}
+</style></head><body><main>
+<header class="top"><h1>Life in Mongol Empire</h1><button id="reset" class="ghost" type="button">Reset all</button></header>
+<p class="sub">Spin each wheel. Dying costs a life. If you have an extra life, you redo the spin instead of ending.</p>
+<div class="lives" id="lives" aria-live="polite"></div>
+<div class="card">
+<h2 id="title"></h2>
+<div class="stage"><div class="lcol"><div class="chbox" id="chbox"></div><p class="sub" style="margin:6px 0 0;font-size:13px">Path this run</p><ol id="log"></ol></div><div class="wcol"><div class="wrap"><div class="ptr"></div><canvas id="c" width="600" height="600"></canvas></div>
+<div class="leg" id="leg"></div></div></div>
+<div class="res" id="res" aria-live="polite"></div>
+<button id="spin">Spin</button><button id="next" hidden>Next wheel</button>
+</div>
+</main>
+<script>
+const K="#2b2b2b",R="#8b1a1a",Y="#e2b400",B="#1f8fd1",P="#e58aa8",G="#5a9f2e",O="#e07a1f",Gy="#7d7d7d",Br="#a8682f",Gn="#1c9a4a",Pu="#8a3fa8",Be="#c9b88a",Bl="#5d7fb0",Nv="#2e3a6e";
+const W={
+birth:{t:"Birth",s:[{l:"Born",p:55,c:K,to:"gender"},{l:"Died (restart)",p:30,c:R,to:"X"},{l:"Disabled",p:15,c:Y,to:"disabled",fx:{col:"#e8c200"}}]},
+gender:{t:"Gender",s:[{l:"Boy",p:50,c:B,to:"boy",fx:{size:"big",col:"#1f8fd1",o:""}},{l:"Girl",p:50,c:P,to:"girl",fx:{size:"big",col:"#ee7fa6",o:""}}]},
+disabled:{t:"Disabled",s:[{l:"Pass",p:20,c:G,to:"V"},{l:"Died (restart)",p:80,c:R,to:"X"}]},
+boy:{t:"Boy",s:[{l:"Village",p:50,c:K,to:"village",fx:{o:"village"}},{l:"Empire",p:35,c:Gn,to:"ksn",fx:{o:"empire"}},{l:"Orphan",p:15,c:Pu,to:"orphan",fx:{o:"orphan"}}]},
+village:{t:"Village",s:[{l:"Protected",p:30,c:G,to:"V"},{l:"Invaded",p:70,c:Be,to:"winlose",fx:{o:"orphan"}}]},
+winlose:{t:"Invaded: fight",s:[{l:"Win",p:20,c:Br,to:"V"},{l:"Lose",p:80,c:Gy,to:"lose"}]},
+lose:{t:"After losing",s:[{l:"Killed (restart)",p:50,c:R,to:"X"},{l:"Join the Empire",p:50,c:Gn,to:"ksn",fx:{o:"empire"}}]},
+orphan:{t:"Orphan",s:[{l:"Died (restart)",p:80,c:R,to:"X"},{l:"Join the Empire",p:20,c:Gn,to:"ksn",fx:{o:"empire"}}]},
+ksn:{t:"Empire rank",s:[{l:"King",p:1,c:Y,to:"king",fx:{o:"king"}},{l:"Soldier",p:95,c:Gy,to:"invade",fx:{o:"soldier"}},{l:"Noble",p:4,c:O,to:"noble",fx:{o:"noble"}}]},
+king:{t:"King",s:[{l:"Become Genghis Khan",p:50,c:G,to:"V"},{l:"Killed (restart)",p:50,c:R,to:"X"}]},
+noble:{t:"Noble",s:[{l:"Lived a happy life",p:50,c:G,to:"V"},{l:"Killed (restart)",p:50,c:R,to:"X"}]},
+invade:{t:"Soldier",s:[{l:"Invade Village",p:80,c:Be,to:"battle"},{l:"Run away",p:20,c:G,to:"V"}]},
+battle:{t:"Battle",s:[{l:"Win",p:80,c:Br,to:"V"},{l:"Killed (restart)",p:20,c:K,to:"X"}]},
+girl:{t:"Girl",s:[{l:"Married off to Noble",p:10,c:Bl,to:"noble",fx:{o:"ggown"}},{l:"Married with kids +1 life",p:10,c:Nv,to:"V",life:1,fx:{o:"gpreg"}},{l:"Invaded",p:40,c:Be,to:"ginv",fx:{o:"gripped"}},{l:"Protected",p:40,c:G,to:"skip",fx:{o:"gleather"}}]},
+ginv:{t:"Girl: invaded",s:[{l:"Lose: become a noble's slave",p:90,c:Gy,to:"slave",fx:{o:"gslave"}},{l:"Live",p:10,c:Br,to:"V"}]},
+slave:{t:"Noble's slave",s:[{l:"Fall in love",p:5,c:P,to:"noble",fx:{o:"ggown"}},{l:"Died of old age (restart)",p:35,c:Gy,to:"X"},{l:"Killed (restart)",p:60,c:R,to:"X"}]},
+skip:{t:"One year timeskip",s:[{l:"A year passes",p:100,c:G,to:"girl"}]}
+};
+const cv=document.getElementById("c"),cx=cv.getContext("2d"),$=id=>document.getElementById(id);
+let cur="birth",lives=1,rot=0,busy=false,pending=null,path=[];
+function draw(){
+ const w=W[cur],S=600,r=290;cx.clearRect(0,0,S,S);let a=-Math.PI/2;
+ w.s.forEach(s=>{const d=s.p/100*2*Math.PI;cx.beginPath();cx.moveTo(S/2,S/2);cx.arc(S/2,S/2,r,a,a+d);cx.closePath();cx.fillStyle=s.c;cx.fill();cx.lineWidth=3;cx.strokeStyle="#fff";cx.stroke();
+ if(s.p>=8){cx.save();cx.translate(S/2,S/2);cx.rotate(a+d/2);cx.fillStyle="#fff";cx.font="bold 30px Georgia";cx.textAlign="right";cx.shadowColor="#000";cx.shadowBlur=4;
+ const t=s.p+"% "+s.l;let f=30;cx.font="bold "+f+"px Georgia";while(cx.measureText(t).width>r-50&&f>12){f--;cx.font="bold "+f+"px Georgia"}cx.fillText(t,r-18,f/3);cx.restore()}
+ a+=d});
+ $("title").textContent=w.t;
+ $("leg").innerHTML=w.s.map(s=>`<span><i style="background:${s.c}"></i>${s.p}% ${s.l}</span>`).join("");
+}
+function hearts(){$("lives").innerHTML="Lives "+Array.from({length:Math.max(1,lives)},(_,i)=>`<span class="heart ${i<lives?"":"off"}"></span>`).join("")+` <span>${lives}</span>`}
+function log(t){path.push(t);$("log").innerHTML=path.map(x=>`<li>${x}</li>`).join("")}
+function show(){sw=null;renderChar();cv.style.transition="none";rot=0;cv.style.transform="rotate(0)";draw();$("res").textContent="";$("res").className="res";$("spin").hidden=false;$("spin").disabled=false;$("next").hidden=true;$("spin").textContent="Spin"}
+$("spin").onclick=()=>{
+ if($("spin").dataset.mode==="reset"){lives=1;ch=newCh();$("spin").dataset.mode="";path=[];$("log").innerHTML="";cur="birth";hearts();show();return}
+ if(busy)return;busy=true;$("spin").disabled=true;
+ const w=W[cur];let x=Math.random()*100,acc=0,idx=0;
+ for(let i=0;i<w.s.length;i++){acc+=w.s[i].p;if(x<acc){idx=i;break}}
+ let start=w.s.slice(0,idx).reduce((q,s)=>q+s.p,0);
+ const pos=(start+w.s[idx].p*(0.15+0.7*Math.random()))/100*360;
+ rot=360*6+(360-pos);
+ cv.style.transition="transform 4s cubic-bezier(.12,.7,.1,1)";cv.style.transform=`rotate(${rot}deg)`;
+ setTimeout(()=>{busy=false;land(w.s[idx])},4100)};
+let prev=null,redo=false,sw=null;
+function land(s){
+ const res=$("res");log(`${W[cur].t}: ${s.l}`);pending=s.to;prev={...ch};sw=W[s.to]?s.to:null;applyFx(s);
+ if(s.to==="X"){lives--;hearts();res.textContent=`${s.l}. You lose a life, but an extra life lets you redo your last spin.`;res.className="res bad";
+  if(lives<=0){res.textContent="Out of lives. Game over.";$("spin").hidden=false;$("spin").disabled=false;$("spin").textContent=s.l;$("spin").dataset.mode="reset";return}
+  $("next").textContent="Redo last spin";$("next").hidden=false;$("spin").hidden=true;pending=cur;redo=true;path.push("--- extra life used: redo ---");}
+ else if(s.to==="V"){if(s.life){lives++;hearts()}res.textContent=`${s.l}. You survived!`+(s.life?" +1 extra life.":"");res.className="res ok";
+  $("next").textContent="Spin again from birth";$("next").hidden=false;$("spin").hidden=true;pending="birth";path.push("--- run complete ---");}
+ else{res.textContent=`${s.l}. Go to the next wheel.`;$("next").textContent="Next wheel: "+W[s.to].t;$("next").hidden=false;$("spin").hidden=true}
+}
+$("next").onclick=()=>{cur=pending;if(redo){ch=prev;redo=false}if(cur==="birth")ch=newCh();if(cur==="birth")$("log").innerHTML=path.slice(-0).length?$("log").innerHTML:"";show()};
+function fullReset(){if(busy)return;redo=false;lives=1;ch=newCh();path=[];$("log").innerHTML="";cur="birth";pending=null;$("spin").dataset.mode="";hearts();show()}
+$("reset").onclick=fullReset;
+function newCh(){return{size:"little",col:"#111111",o:"",dead:false}}
+let ch=newCh();
+function applyFx(s){if(s.fx)Object.assign(ch,s.fx);if(s.to==="X")ch.dead=true;renderChar()}
+const P_=(d,f,s,w)=>`<path d="${d}" fill="${f||"none"}" stroke="${s||"none"}" stroke-width="${w||2.5}"/>`;
+const H_=(x,y,r,s)=>`<circle cx="${x}" cy="${y}" r="${r}" fill="#fff" stroke="${s}" stroke-width="1.5"/>`;
+const J_=(x,y)=>`<circle cx="${x}" cy="${y}" r="2" fill="#c0171d"/>`;
+const GA=c=>P_("M-11 104L-28 126M12 104L30 124",0,c,3.5);
+const HD="M-10 62C2 57 14 66 12 77C10 89 -5 91 -12 84C-18 77 -18 66 -10 62Z",LH="M-11 78C1 74 13 82 11 92C9 104 -5 106 -12 100C-19 94 -19 82 -11 78Z",DH="M-66 150C-62 138 -42 138 -38 150C-36 162 -52 166 -62 162C-68 158 -68 154 -66 150Z",EYE="M-59 146L-53 152M-53 146L-59 152M-49 148L-43 154M-43 148L-49 154";
+const RIP="M-9 92L-2 95L10 92L13 116L18 124L14 132L21 141L10 136L6 145L0 136L-6 146L-11 137L-20 142L-17 130L-12 123L-9 114Z",DRS="M-9 92L10 92L24 142L-22 142Z",LD="M-34 147L-4 144L30 134L30 172L-4 162L-34 159Z",LRIP="M-34 147L-4 144L30 134L26 142L32 148L26 155L32 162L26 168L30 172L-4 162L-34 159Z";
+const st={
+village:c=>P_("M-10 92L11 92L16 140L-15 140Z","#a0703c","#5e3d1c"),
+empire:c=>P_("M-10 92L11 92L16 140L-15 140Z","#efe6cc","#8a7a55")+P_("M-12 118L13 118",0,"#1c9a4a",3.5),
+orphan:c=>P_("M-10 92L-2 95L11 92L16 134L12 142L7 136L2 144L-4 136L-9 143L-15 133Z","#a0703c","#5e3d1c")+H_(4,104,3,"#5e3d1c")+H_(-5,114,2.5,"#5e3d1c")+H_(3,126,2,"#5e3d1c"),
+king:c=>P_("M-11 92L12 92L20 152L-19 152Z","#7a2f9a","#4a1a60")+P_("M-17 148L18 148M-11 116L12 116M0 94L1 148",0,"#f2c200",3)+P_("M-10 58L-12 44L-5 52L0 42L5 52L12 44L10 58Z","#f2c200","#b88a00",2)+J_(-12,44)+J_(0,42)+J_(12,44),
+noble:c=>P_("M-10 92L11 92L15 142L-14 142Z","#2e8b57","#1a5a38")+P_("M-12 118L13 118M-14 138L15 138M-8 93L0 102L9 93",0,"#f2c200",3),
+soldier:c=>P_("M-10 92L11 92L12 128L-11 128Z","#7b5a34","#4a3320")+P_("M-10 102L11 102M-11 112L12 112",0,"#4a3320",2)+P_("M-11 128L12 128L16 146L-15 146Z","#9a8260","#4a3320")+P_("M-14 64C-10 44 10 44 14 64Z","#8c929b","#4a4f57")+P_("M-15 65L15 65",0,"#5e3d1c",5),
+gleather:c=>P_(DRS,"#a0703c","#5e3d1c")+GA(c),
+gpreg:c=>P_(DRS,"#a0703c","#5e3d1c")+`<circle cx="2" cy="118" r="14" fill="#b8834a" stroke="#5e3d1c" stroke-width="2.5"/>`+GA(c),
+gripped:c=>P_(RIP,"#a0703c","#5e3d1c")+H_(4,104,3,"#5e3d1c")+H_(-4,116,2.5,"#5e3d1c")+GA(c),
+ggown:c=>P_("M-9 92L10 92L22 148L-20 148Z","#2e8b57","#1a5a38")+P_("M-9 114L11 114M-19 144L21 144M-7 93L0 102L8 93",0,"#f2c200",3)+GA(c),
+gslave:c=>P_(RIP,"#8a8a8a","#4a4a4a")+H_(4,104,3,"#4a4a4a")+H_(-4,116,2.5,"#4a4a4a")+H_(3,126,2,"#4a4a4a")+GA(c)};
+const R_="#8f1218",ly={
+village:()=>P_("M-34 144L10 144L12 164L-34 162Z","#e06b6b",R_),
+empire:()=>P_("M-34 144L10 144L12 164L-34 162Z","#f0a0a0",R_)+P_("M-14 144L-14 163",0,R_,3.5),
+orphan:()=>P_("M-34 144L-14 146L6 144L10 150L5 154L11 158L7 164L-34 162Z","#e06b6b",R_)+H_(-24,152,2.5,R_)+H_(-6,153,2,R_),
+king:()=>P_("M-34 142L24 141L26 166L-34 163Z","#d94f4f",R_)+P_("M-32 154L24 154",0,R_,2.5)+P_("M-66 138L-70 124L-62 130L-57 120L-52 130L-44 124L-46 138Z","#e86a6a",R_,2),
+noble:()=>P_("M-34 144L16 143L18 165L-34 162Z","#e06b6b",R_)+P_("M-14 144L-14 163M-34 150L18 150",0,R_,2.5),
+soldier:()=>P_("M-34 145L-2 146L-2 162L-34 161Z","#c85a5a",R_)+P_("M-26 145L-26 161M-16 145L-16 161",0,R_,2)+P_("M-2 146L18 143L20 166L-2 162Z","#dd8080",R_)+P_("M-68 142C-64 126 -48 128 -40 142Z","#c07070",R_)+P_("M-69 143L-39 143",0,R_,4),
+gleather:()=>P_(LD,"#e06b6b",R_),
+gpreg:()=>P_(LD,"#e06b6b",R_)+`<circle cx="-8" cy="146" r="11" fill="#ee8a8a" stroke="${R_}" stroke-width="2.5"/>`,
+gripped:()=>P_(LRIP,"#e06b6b",R_)+H_(-14,152,2.5,R_)+H_(2,152,3,R_),
+ggown:()=>P_(LD,"#d94f4f",R_)+P_("M-4 144L-4 162M28 135L28 171",0,R_,2.5)};
+ly.gslave=ly.gripped;
+const SKY=c=>`<rect x="-80" y="36" width="160" height="142" fill="${c}"/>`,GND=c=>`<rect x="-80" y="146" width="160" height="32" fill="${c}"/>`,SUN=`<circle cx="-58" cy="62" r="11" fill="#f6d046"/>`,CLOUD=(x,y)=>`<ellipse cx="${x}" cy="${y}" rx="14" ry="5" fill="#fff"/>`;
+const GER=(x,y,s)=>`<g transform="translate(${x},${y}) scale(${s})"><path d="M-22 0L-22 -16Q0 -42 22 -16L22 0Z" fill="#f4f1e8" stroke="#8a8272" stroke-width="2"/><path d="M-5 0L-5 -13L5 -13L5 0Z" fill="#8a5a2b"/></g>`;
+const TENT=(x,y,s,c,t,f)=>`<g transform="translate(${x},${y}) scale(${s})"><path d="M-26 0L0 -40L26 0Z" fill="${c}" stroke="#6b5a3a" stroke-width="2"/><path d="M-6 0L0 -16L6 0Z" fill="${t}"/><path d="M0 -40L0 -56" stroke="#6b5a3a" stroke-width="2"/><path d="M0 -56L14 -51L0 -46Z" fill="${f}"/></g>`;
+const FLAME=(x,y,s)=>`<g transform="translate(${x},${y}) scale(${s})"><path d="M-9 0L-6 -18L-2 -8L2 -24L7 -10L10 -16L10 0Z" fill="#e8541e"/><path d="M-4 0L-1 -10L3 -14L5 0Z" fill="#f6d046"/></g>`;
+const SPEAR=x=>`<path d="M${x} 150L${x} 112" stroke="#6b5a3a" stroke-width="2"/><path d="M${x-3} 114L${x} 106L${x+3} 114Z" fill="#8c929b"/>`;
+const sc={
+ger:()=>SKY("#bfe3f5")+SUN+CLOUD(40,56)+GND("#a9cf86")+GER(52,150,1.1),
+steppe:()=>SKY("#bfe3f5")+SUN+CLOUD(40,60)+`<path d="M-80 146Q-40 118 0 140Q40 120 80 146Z" fill="#8fbf6f"/>`+GND("#a9cf86"),
+village:()=>SKY("#bfe3f5")+SUN+GND("#a9cf86")+GER(-54,150,.9)+GER(54,150,.8),
+fire:()=>SKY("#f4b183")+GND("#b08a5a")+`<circle cx="-50" cy="76" r="12" fill="#c9a28a"/><circle cx="-38" cy="62" r="9" fill="#d3b5a0"/>`+FLAME(-58,150,1.3)+FLAME(-36,150,.9)+FLAME(54,150,1.4)+FLAME(36,150,.8),
+orphan:()=>SKY("#d3c7e0")+`<circle cx="52" cy="62" r="9" fill="#f3efe0"/>`+GND("#a89f8c")+`<path d="M-56 150L-56 108M-56 124L-68 114M-56 118L-46 106" stroke="#5a4a3a" stroke-width="3" fill="none" stroke-linecap="round"/>`,
+empire:()=>SKY("#bfe3f5")+SUN+GND("#a9cf86")+TENT(52,150,1.3,"#d9c9a0","#b3261e","#b3261e")+TENT(-56,150,.8,"#d9c9a0","#b3261e","#b3261e"),
+royal:()=>SKY("#f6e3a6")+GND("#c9a45a")+TENT(52,150,1.5,"#f2c200","#7a2f9a","#7a2f9a")+TENT(-54,150,.9,"#f2c200","#7a2f9a","#7a2f9a"),
+noble:()=>SKY("#d9c8ee")+GND("#a9cf86")+TENT(52,150,1.3,"#8a5fb8","#f2c200","#f2c200"),
+camp:()=>SKY("#bfe3f5")+SUN+GND("#a9cf86")+SPEAR(-62)+SPEAR(-52)+SPEAR(52)+SPEAR(62)+FLAME(-34,152,.6),
+battle:()=>SKY("#cfd4d9")+`<ellipse cx="-40" cy="60" rx="20" ry="7" fill="#9aa1a8"/><ellipse cx="36" cy="72" rx="24" ry="7" fill="#9aa1a8"/>`+GND("#9a8f78")+`<path d="M-66 150L-50 112M-50 150L-66 112M50 150L66 112M66 150L50 112" stroke="#6b5a3a" stroke-width="2.5"/><path d="M0 150L0 100" stroke="#6b5a3a" stroke-width="2"/><path d="M0 100L16 106L0 112Z" fill="#b3261e"/>`,
+time:()=>`<rect x="-80" y="36" width="80" height="142" fill="#bfe3f5"/><rect x="0" y="36" width="80" height="142" fill="#8ea3c7"/><circle cx="-50" cy="62" r="11" fill="#f6d046"/><circle cx="52" cy="62" r="10" fill="#f3efe0"/><circle cx="57" cy="59" r="9" fill="#8ea3c7"/>`+GND("#a9cf86"),
+dungeon:()=>SKY("#b9bec4")+`<path d="M-80 70H80M-80 100H80M-80 130H80" stroke="#a5aab0" stroke-width="1.5"/><rect x="30" y="60" width="32" height="40" fill="#e8f1f7" stroke="#6b7078" stroke-width="2"/><path d="M38 60L38 100M46 60L46 100M54 60L54 100" stroke="#6b7078" stroke-width="2"/><rect x="-80" y="150" width="160" height="28" fill="#8a8f96"/><path d="M-58 36L-58 78" stroke="#555" stroke-width="3" stroke-dasharray="5 3"/>`};
+const SCN={birth:"ger",gender:"ger",disabled:"ger",boy:"steppe",village:"village",winlose:"fire",lose:"fire",orphan:"orphan",ksn:"empire",king:"royal",noble:"noble",invade:"camp",battle:"battle",girl:"ger",ginv:"fire",skip:"time",slave:"dungeon"};
+const scn=()=>(sc[SCN[sw||cur]]||(()=>""))();
+function renderChar(){const c=ch,k=c.dead?"#c0171d":c.col,gl=/^g/.test(c.o);let g;
+if(c.dead&&c.size==="little")g=P_("M-40 150C-36 142 -22 143 -20 152C-18 162 -32 167 -38 161C-42 157 -42 153 -40 150Z",0,k,3.5)+P_("M-19 156L14 158M-6 157L-2 144M0 157L8 168M14 158L30 152M14 158L31 166",0,k,3.5)+P_("M-35 148L-30 153M-30 148L-35 153M-28 150L-23 155M-23 150L-28 155",0,k,2.5);
+else if(c.dead)g=P_(DH,0,k,3.5)+P_("M-37 152L13 154M-18 152L-14 134M-8 153L6 170M13 154L38 146M13 154L40 166",0,k,3.5)+P_(EYE,0,k,2.5)+(ly[c.o]?ly[c.o]():"");
+else if(c.size==="little")g=`<g transform="translate(0,8)">`+P_(LH,0,k,3.5)+P_("M-1 106L0 140M0 116L-14 128M0 116L14 127M0 140L-10 162M0 140L11 161",0,k,3.5)+"</g>";
+else g=P_(HD,0,k,3.5)+P_("M0 90L1 138M1 138L-11 168M1 138L13 166"+(gl?"":"M1 102L-16 118M1 102L17 116"),0,k,3.5)+(st[c.o]?st[c.o](k):"");
+$("chbox").innerHTML=`<svg viewBox="-80 36 160 142" role="img" aria-label="Your character">${scn()}<g stroke-linecap="round" stroke-linejoin="round">${g}</g></svg>`}
+hearts();draw();renderChar();
+</script></body></html>
